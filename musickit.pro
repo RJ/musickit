@@ -14,4 +14,3 @@ SOURCES += main.cpp \
     WebkitApi.cpp
 HEADERS += mainwindow.h \
     WebkitApi.h
-FORMS += mainwindow.ui
