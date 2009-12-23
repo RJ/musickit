@@ -1,0 +1,73 @@
+<html>
+<head><title>my title</title>
+</head>
+<body>
+<h1>Musickit test page</h1>
+<script type="text/javascript">
+
+var $ = function(x){return document.getElementById(x);}
+
+function mmss(secs) {
+    var s = secs % 60;
+    if (s < 10) {
+        s = "0" + s;
+    }
+    return Math.floor(secs/60) + ":" + s;
+}
+
+
+function mk_log(txt)
+{
+    var d = document.getElementById('log');
+    d.innerHTML = txt + "<br/>" + d.innerHTML;
+}
+
+// Wire up signals emitted by the Musickit API to JS functions:
+// TODO to onpageloaded/ready instead of a fixed timeout:
+setTimeout(function(){
+  try {
+    // i: seconds played so far, emitted every second
+    MK.elapsed.connect(function(elapsed, remaining){
+        $('progress').innerHTML = mmss(elapsed) + " / " + mmss(remaining);
+    });
+
+    // one of: playing stopped paused buffering loading
+    MK.stateChange.connect(function(state){
+        mk_log("js state callback: " + state);
+    });
+
+    // if there's any buffering, pc: 0-100 % of stream loaded.
+    MK.bufferPercent.connect(function(pc){
+        $('bufferpc').innerHTML = "Buffering: " + pc +"%";
+    });
+
+    MK.volumeChanged.connect(function(v){
+        mk_log('volume set to '  + v);
+    });
+
+
+  }
+  catch(e) {
+    alert(e);
+  }
+ }, 100);
+
+</script>
+<a href="#" onclick="MK.togglePause(); return false;">togglePause</a> | 
+<a href="#" onclick="MK.stop(); return false;">stop</a><br/>
+
+<input type="text" value="50" id="vol"/><input type="button" value="setvol" onclick="MK.setVolume(parseInt($('vol').value)); return false;"><br/>
+
+<input type="text" id="playurl"/> 
+<input type="button" value="&lt;-- play url" onclick="MK.play($('playurl').value)"/><br/>
+<div id="np">
+<span id="artist">???</span> - <span id="track">???</span> 
+<br/>
+<span id="progress">XXX</span> 
+ [<span id="bufferpc"></span>]
+</div>
+
+<div id="log" style="font:fixed; border:1px solid red;">
+</div>
+</body>
+</html>

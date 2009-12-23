@@ -1,0 +1,12 @@
+Musickit
+========
+
+An experiment in building a container app using Qt and Webkit that exposes a 
+JS api for audio playback, using phonon, and potentially some other APIs
+(XMPP etc) so that a music player can be written in JS/html and not suck.
+
+--
+
+I used QT Creator 4.6, it rocks, but I had to symlink my phonon qt plugin
+dir into the place where creator got installed. Packaging/distro bug.
+
