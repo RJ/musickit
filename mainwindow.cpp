@@ -52,6 +52,7 @@ void MainWindow::setupUi()
     QGridLayout *layout = new QGridLayout();
 
     webView = new QWebView();
+    webView->settings()->setAttribute(QWebSettings::LocalContentCanAccessRemoteUrls,true); // needs QT >= 4.6
 
     playurlBtn = new QPushButton("Play Stream");
     playfileBtn = new QPushButton("Play Local File");
