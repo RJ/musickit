@@ -4,6 +4,7 @@
 #include <qwebframe.h>
 #include <QMessageBox>
 #include "WebkitApi.h"
+#include "mainwindow.h"
 
 WebkitApi::WebkitApi( QObject *parent )
     : QObject( parent )
@@ -61,6 +62,11 @@ void WebkitApi::setVolume(int i)
 void WebkitApi::togglePause()
 {
     emitTogglePause();
+}
+
+void WebkitApi::setWindowTitle(QString tit)
+{
+    ((MainWindow* )parent())->setWindowTitle(tit);
 }
 
 void WebkitApi::play(QString s)

@@ -4,31 +4,29 @@
 #include <QMainWindow>
 
 #include <Phonon/AudioOutput>
-#include <Phonon/SeekSlider>
 #include <Phonon/MediaObject>
-#include <Phonon/VolumeSlider>
 #include <Phonon/BackendCapabilities>
 #include <QString>
 #include <QUrl>
+#include <QPushButton>
+#include <QWebView>
+#include <QEvent>
 
 #include "WebkitApi.h"
 
-namespace Ui {
-    class MainWindow;
-}
-
-class MainWindow : public QMainWindow {
+class MainWindow : QWidget {
     Q_OBJECT
 public:
     MainWindow(QWidget *parent = 0);
     ~MainWindow();
+    friend class WebkitApi;
 
 protected:
     void changeEvent(QEvent *e);
 
 private slots:
-    void on_pushButton_2_clicked();
-    void on_pushButton_clicked();
+    void on_playbutton_clicked();
+    void on_streambutton_clicked();
     void stateChanged(Phonon::State newState, Phonon::State oldState);
     void tick(qint64 time);
     void sourceChanged(const Phonon::MediaSource &source);
@@ -45,9 +43,11 @@ private slots:
 private:
 
     WebkitApi * webkitApi;
+    QWebView * webView;
+    QPushButton *playurlBtn;
+    QPushButton *playfileBtn;
 
-    Ui::MainWindow *ui;
-
+    void setupUi();
     void play(QUrl);
 
     Phonon::MediaObject *mediaObject;

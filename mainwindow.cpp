@@ -1,21 +1,21 @@
 #include "mainwindow.h"
-#include "ui_mainwindow.h"
 
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QDesktopServices>
 #include <QTime>
 #include <QWebFrame>
+#include <QGridLayout>
+#include <QPushButton>
+#include <QInputDialog>
 
-MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow)
+MainWindow::MainWindow(QWidget *parent)
 {
+    setParent(parent);
     source = 0;
     audioOutput = new Phonon::AudioOutput(Phonon::MusicCategory, this);
     mediaObject = new Phonon::MediaObject(this);
     metaInformationResolver = new Phonon::MediaObject(this);
-
     mediaObject->setTickInterval(1000);
     connect(mediaObject, SIGNAL(tick(qint64)), this, SLOT(tick(qint64)));
     connect(mediaObject, SIGNAL(stateChanged(Phonon::State, Phonon::State)),
@@ -25,25 +25,46 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(mediaObject, SIGNAL(currentSourceChanged(const Phonon::MediaSource &)),
             this, SLOT(sourceChanged(const Phonon::MediaSource &)));
     connect(mediaObject, SIGNAL(aboutToFinish()), this, SLOT(aboutToFinish()));
-
     connect(mediaObject, SIGNAL(bufferStatus(int)), this, SLOT(bufferPercent(int)));
 
     Phonon::createPath(mediaObject, audioOutput);
 
+    setupUi();
     webkitApi = new WebkitApi(this);
-    ui->setupUi(this);
-    webkitApi->setWebView(ui->webView);
+    webkitApi->setWebView(webView);
 
     connect(webkitApi, SIGNAL(pauseToggled()), this, SLOT(togglePause()));
     connect(webkitApi, SIGNAL(volumeChanged(int)), this, SLOT(setVolume(int)));
     connect(webkitApi, SIGNAL(playRequested(QString)), this, SLOT(play(QString)));
     connect(webkitApi, SIGNAL(stopRequested()), this, SLOT(stop()));
     connect(audioOutput, SIGNAL(volumeChanged(qreal)), this, SLOT(volumeChanged(qreal)));
+
+    QString url("./www/index.html");
+    webView->load(QUrl(url));
 }
 
 MainWindow::~MainWindow()
 {
-    delete ui;
+}
+
+void MainWindow::setupUi()
+{
+    QGridLayout *layout = new QGridLayout();
+
+    webView = new QWebView();
+
+    playurlBtn = new QPushButton("Play Stream");
+    playfileBtn = new QPushButton("Play Local File");
+
+    layout->addWidget(webView, 0, 0, 1, 2);
+    layout->addWidget(playurlBtn, 1, 0);
+    layout->addWidget(playfileBtn, 1, 1);
+
+    setLayout(layout);
+    show();
+
+    connect(playurlBtn, SIGNAL(clicked()), this, SLOT(on_streambutton_clicked()));
+    connect(playfileBtn, SIGNAL(clicked()), this, SLOT(on_playbutton_clicked()));
 }
 
 void MainWindow::volumeChanged(qreal vr)
@@ -170,9 +191,9 @@ void MainWindow::metaStateChanged(Phonon::State newState, Phonon::State /* oldSt
  void MainWindow::tick(qint64 time)
  {
 
-     QTime displayTime(0, (int)((time / 60000) % 60), (int)((time / 1000) % 60), 0);
-     QString prog = displayTime.toString("mm:ss");
-     setWindowTitle(prog);
+     //QTime displayTime(0, (int)((time / 60000) % 60), (int)((time / 1000) % 60), 0);
+     //QString prog = displayTime.toString("mm:ss");
+     //setWindowTitle(prog);
 
      webkitApi->emitTick(time, mediaObject->remainingTime());
      //int secs = time / 1000;
@@ -192,7 +213,7 @@ void MainWindow::metaStateChanged(Phonon::State newState, Phonon::State /* oldSt
  void MainWindow::jseval(QString str)
 {     
      qDebug() << str ;
-    ui->webView->page()->currentFrame()->evaluateJavaScript(str);
+    webView->page()->currentFrame()->evaluateJavaScript(str);
 }
 
 
@@ -203,17 +224,17 @@ void MainWindow::metaStateChanged(Phonon::State newState, Phonon::State /* oldSt
 
 void MainWindow::changeEvent(QEvent *e)
 {
-    QMainWindow::changeEvent(e);
+    /*QMainWindow::changeEvent(e);
     switch (e->type()) {
     case QEvent::LanguageChange:
-        ui->retranslateUi(this);
+        //retranslateUi(this);
         break;
     default:
         break;
-    }
+    }*/
 }
 
-void MainWindow::on_pushButton_clicked()
+void MainWindow::on_playbutton_clicked()
 {
     QString file = QFileDialog::getOpenFileName(this, "Select Audio File", QDesktopServices::storageLocation(QDesktopServices::MusicLocation));
     if(!file.isEmpty())
@@ -222,7 +243,13 @@ void MainWindow::on_pushButton_clicked()
     }
 }
 
-void MainWindow::on_pushButton_2_clicked()
+void MainWindow::on_streambutton_clicked()
 {
-    play(QUrl("http://www.playdar.org/hiding.mp3"));
+    bool ok;
+    QString url = QInputDialog::getText(this, "Enter Stream URL", "URL:",
+                                        QLineEdit::Normal, "http://www.playdar.org/hiding.mp3", &ok);
+    if(ok)
+    {
+        play(QUrl(url));
+    }
 }

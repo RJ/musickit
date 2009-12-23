@@ -30,6 +30,9 @@ setTimeout(function(){
     MK.elapsed.connect(function(elapsed, remaining){
         $('progress').innerHTML = mmss(elapsed) + " / " + mmss(remaining);
     });
+    MK.elapsed.connect(function(elapsed, remaining){
+        MK.setWindowTitle(mmss(remaining));
+    });
 
     // one of: playing stopped paused buffering loading
     MK.stateChange.connect(function(state){
@@ -41,6 +44,7 @@ setTimeout(function(){
         $('bufferpc').innerHTML = "Buffering: " + pc +"%";
     });
 
+    // 0-100, new volume setting
     MK.volumeChanged.connect(function(v){
         mk_log('volume set to '  + v);
     });
@@ -56,10 +60,12 @@ setTimeout(function(){
 <a href="#" onclick="MK.togglePause(); return false;">togglePause</a> | 
 <a href="#" onclick="MK.stop(); return false;">stop</a><br/>
 
-<input type="text" value="50" id="vol"/><input type="button" value="setvol" onclick="MK.setVolume(parseInt($('vol').value)); return false;"><br/>
+<input type="text" value="50" id="vol"/>
+<input type="button" value="setvol" onclick="MK.setVolume(parseInt($('vol').value)); return false;"><br/>
 
 <input type="text" id="playurl"/> 
 <input type="button" value="&lt;-- play url" onclick="MK.play($('playurl').value)"/><br/>
+
 <div id="np">
 <span id="artist">???</span> - <span id="track">???</span> 
 <br/>
