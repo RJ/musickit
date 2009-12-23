@@ -1,0 +1,189 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Playdar - hAudio Microformat Demo</title>
+    <link rel="stylesheet" href="http://www.playdar.org/static/playdar.css" type="text/css" />
+    <script type="text/javascript" src="http://www.playdar.org/static/prototype.js"></script>
+    <script type="text/javascript" src="playdar_compressed.js"></script>
+
+</head>
+<body>
+    
+<h2>hAudio Demo</h2>
+<div class="box" id="playdar_stat">Checking for local Playdar service...</div>
+
+<p>
+
+    This demo isn't really about microformats. It uses a super-simple hAudio implementation
+    to represent tracks, but you could write a custom parser to find elements on any site
+    that represent artist/track names.
+</p>
+<form action="">
+<input type="submit" value="Microformats Go!" id="gomicroformats" onclick="return go_microformats()" disabled="disabled" />
+</form>
+<ul id="tracks">
+    <li>
+        <div class="haudio">
+           <span class="contributor">Rick Astley</span> -
+           <span class="fn">Never Gonna Give You Up</span>
+
+        </div>
+    </li>
+    <li>
+        <div class="haudio">
+           <span class="contributor">Weezer</span> -
+           <span class="fn">Undone - The Sweater Song</span>
+        </div>
+    </li>
+
+    <li>
+        <div class="haudio">
+           <span class="contributor">Metallica</span> -
+           <span class="fn">Enter Sandman</span> 
+        </div>
+    </li>
+    <li>
+        <div class="haudio">
+
+           <span class="contributor">The Beatles</span> -
+           <span class="fn">Yellow Submarine</span>
+        </div>
+    </li>
+    <li>
+        <div class="haudio">
+           <span class="contributor">Guns N' Roses</span> -
+           <span class="fn">Sweet Child O' Mine</span>
+
+        </div>
+    </li>
+    <li>
+        <div class="haudio">
+           <span class="contributor">Joe Satriani</span> -
+           <span class="fn">Surfing with the Alien</span> 
+        </div>
+    </li>
+
+    <li>
+        <div class="haudio">
+           <span class="contributor">Massive Attack</span> - 
+           <span class="fn">Angel</span>
+        </div>
+    </li>
+    <li>
+        <div class="haudio">
+
+           <span class="contributor">Nightwish</span> -
+           <span class="fn">Angels Fall First</span>
+        </div>
+    </li>
+    <li>
+        <div class="haudio">
+           <span class="contributor">Big Bad Sun</span> -
+           <span class="fn">Sweet Melissa</span> 
+        </div>
+
+        (this one is a a Magnatune artist)
+    </li>
+    <li>
+        <div class="haudio">
+           <span class="contributor">Dream Theatre</span> -
+           <span class="fn">Pull Me Udner</span> 
+        </div>
+        (intentionally misspelled)
+    </li>
+
+    <li>
+        <div class="haudio">
+           <span class="contributor">Dire Straights</span> -
+           <span class="fn">01 - sultans of swing</span> 
+        </div>
+        (intentionally misspelled)
+    </li>
+
+</ul>
+
+<script type="text/javascript">
+// create a custom playdar callback that will handle results for this query:
+var results_handler = function (response, finalanswer) {
+    var status = $(response.qid);
+    if (response.results.length) {
+        // generate tooltip with details:
+        var tt = "Sources: ";
+        for (var k = 0; k < response.results.length; ++k) {
+            var r = response.results[k];
+            tt += r.source + "/" + r.bitrate + "kbps/" + Playdar.Util.mmss(r.duration) + " ";
+        }
+        // update status element:
+        status.className = 'playdar_found';
+        
+        //var sound = Playdar.player.register_stream(response.results[0]);
+        status.update("<a href=\"#\" title=\""+tt+"\" class=\"playbutton\">" + response.results.length + "<span style=\"display: none;\">" + response.results[0].sid + "<\/span><\/a>");
+    } else if (finalanswer) {
+        status.className = 'playdar_notfound';
+        status.update(':(');
+    }
+};
+
+//Playdar.USE_JSONP = false;
+Playdar.setup({
+    receiverurl: "http://www.playdar.org/demos/playdarauth.html",
+    website: "http://www.playdar.org/demos/",
+    name: "Playdar Demos"
+});
+//Playdar.USE_JSONP = false;
+Playdar.client.register_listeners({
+    onStat: function (detected) {
+        var text;
+        if (detected) {
+            text = "<b style='color:green;'>Playdar ready<\/b>";
+        } else {
+            text = "<b style='color:red;'>Playdar unavailable<\/b><br/>You need Playdar, the music content resolver, installed and running. See <a href=\"http://www.playdar.org/\">www.playdar.org<\/a>.";
+        }
+        $('playdar_stat').update(text);
+    },
+    onAuth: function () {
+        $('gomicroformats').disabled = false;
+    }
+});
+Playdar.client.register_results_handler(results_handler);
+//soundManager.url = '\/static\/soundmanager2_flash9.swf';
+//soundManager.flashVersion = 9;
+//soundManager.onload = function () {
+    //Playdar.setup_player(soundManager);
+    Playdar.client.init();
+//};
+
+$('tracks').observe('click', function (e) {
+    var el = e.element();
+    if (el.match('a.playbutton')) {
+        e.stop();
+        var sid = el.down('span').innerHTML;
+        alert(sid);
+        //Playdar.player.play_stream(sid);
+    }
+});
+
+var mkstatuselem = function (id) {
+    var status = new Element('span', {
+        "id": id,
+        "class": 'playdar_searching'
+    }).update("&nbsp; &nbsp;");
+    return status;
+};
+
+
+function go_microformats() {
+    Playdar.client.autodetect(function (track) {
+        var uuid = Playdar.Util.generate_uuid();
+        // add a "searching..." status :
+        var status = mkstatuselem(uuid);
+        track.element.insert(status);
+        return uuid;
+    });
+    return false;
+}
+</script>
+</body>
+</html>
+

@@ -8,6 +8,8 @@
 #include <QGridLayout>
 #include <QPushButton>
 #include <QInputDialog>
+#include <QNetworkCookieJar>
+#include <QNetworkCookie>
 
 MainWindow::MainWindow(QWidget *parent)
 {
@@ -54,6 +56,12 @@ void MainWindow::setupUi()
     webView = new QWebView();
     webView->settings()->setAttribute(QWebSettings::LocalContentCanAccessRemoteUrls,true); // needs QT >= 4.6
 
+   // QNetworkCookieJar jar;
+    //QList<QNetworkCookie> cookies;
+    //cookies.append( QNetworkCookie("auth","XXX") );
+    //jar.setCookiesFromUrl(cookies, QUrl(""))
+
+    //->page->networkAccessManager()->setCookieJar( new QNetworkCookieJar() );
     playurlBtn = new QPushButton("Play Stream");
     playfileBtn = new QPushButton("Play Local File");
 
