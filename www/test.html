@@ -1,13 +1,65 @@
-<html><body>
+<html>
+<head>
+<script src="playdar_compressed.js"></script>
+<body>
 <h1>test</h1>
 <a href="index.html">INDEX</a>
 <h3>Loading page</h3>
-
+<div id="trks">
 <script type="text/javascript">
 var req = new XMLHttpRequest();
-req.open("GET", "http://www.google.com/", false);
+req.open("GET", "http://ws.audioscrobbler.com/1.0/tag/metal/toptracks.xspf", false);
 req.send("");
-document.write(req.responseText);
+//alert("gottit");
+var doc = req.responseXML.documentElement;
+var tracks = doc.getElementsByTagName("trackList")[0].getElementsByTagName('track');
+//alert(tracks.length);
+var trklist=new Array();
+for(i=0; i<tracks.length; i++)
+{
+    trk = tracks[i];
+    var title  = trk.getElementsByTagName('title')[0].firstChild.nodeValue;
+    var artist = trk.getElementsByTagName('creator')[0].firstChild.nodeValue;
+    trklist[i]={'artist': artist, 'track': title};
+    document.write("<div id=\"t"+i+"\">" + artist +  " - " + title + " </div><br/>");
+}
+</script>
+</div>
+<div id="res"></div>
+<script type="text/javascript">
+
+    Playdar.USE_JSONP=false;
+    Playdar.setupClient({
+        
+        // Called when the browser is authorised to query Playdar.
+        onAuth: function () {
+            // At this point, we can query the Playdar API for a track and start polling for matches.
+            for(j=0;j<trklist.length;j++)
+            {
+                Playdar.client.resolve(trklist[j].artist, trklist[j].track, "", 't'+j);
+            }
+        },
+        
+        // Called in response to each poll with the results so far.
+        onResults: function (response, lastPoll) {
+//            console.log('Polling ' + response.qid);
+            if (lastPoll && response) {
+                var d = document.getElementById(response.qid);
+                if(response.results.length == 0)
+                {
+                    d.style.textDecoration='line-through';
+                }else{
+                    var url="http://localhost:60210/sid/"+response.results[0].sid;
+                    d.innerHTML = '<a href="#" onclick="MK.play(\''+url+'\'); return false;">' + d.innerHTML + '</a>' + "<br/>" + url;
+                }
+//document.getElementById("res").innerHTML=JSON.stringify(response);
+                // Take a look at the final response.
+                //console.dir(response);
+            }
+        }
+        
+    });
+    Playdar.client.go();
 </script>
 
 </body></html>
