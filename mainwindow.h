@@ -13,6 +13,15 @@
 #include <QEvent>
 
 #include "WebkitApi.h"
+#include "jabber.h"
+
+class Webpage : public QWebPage
+{
+    virtual void javaScriptConsoleMessage ( const QString & message, int lineNumber, const QString & sourceID )
+    {
+        qDebug() << message << " @ no. " << lineNumber << " sourceid: " << sourceID;
+    }
+};
 
 class MainWindow : QWidget {
     Q_OBJECT
@@ -27,6 +36,7 @@ protected:
 private slots:
     void on_playbutton_clicked();
     void on_streambutton_clicked();
+    void on_reloadbutton_clicked();
     void stateChanged(Phonon::State newState, Phonon::State oldState);
     void tick(qint64 time);
     void sourceChanged(const Phonon::MediaSource &source);
@@ -42,10 +52,13 @@ private slots:
 
 private:
 
+    Jabber * jabber;
+
     WebkitApi * webkitApi;
     QWebView * webView;
     QPushButton *playurlBtn;
     QPushButton *playfileBtn;
+    QPushButton *reloadBtn;
 
     void setupUi();
     void play(QUrl);

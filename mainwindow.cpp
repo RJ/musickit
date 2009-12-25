@@ -11,8 +11,23 @@
 #include <QNetworkCookieJar>
 #include <QNetworkCookie>
 
+
 MainWindow::MainWindow(QWidget *parent)
 {
+    /*QXmppLogger::getLogger()->setLoggingType(QXmppLogger::FILE);
+
+    bool ok;
+    QString server= QInputDialog::getText(this, "Enter jabber server address", "jid",
+                                        QLineEdit::Normal, "talk.google.com", &ok);
+    QString jid = QInputDialog::getText(this, "Enter jabber username (user@example.com)", "jid",
+                                        QLineEdit::Normal, "rj@metabrew.com", &ok);
+    QString pass = QInputDialog::getText(this, "Enter jabber password", "pass",
+                                        QLineEdit::Normal, "", &ok);
+
+    jabber = new Jabber();
+    jabber->connectToServer(server, jid, pass);
+*/
+
     setParent(parent);
     source = 0;
     audioOutput = new Phonon::AudioOutput(Phonon::MusicCategory, this);
@@ -41,7 +56,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(webkitApi, SIGNAL(stopRequested()), this, SLOT(stop()));
     connect(audioOutput, SIGNAL(volumeChanged(qreal)), this, SLOT(volumeChanged(qreal)));
 
-    QString url("./www/index.html");
+    QString url("./www/player/index.html");
     webView->load(QUrl(url));
 }
 
@@ -54,9 +69,10 @@ void MainWindow::setupUi()
     QGridLayout *layout = new QGridLayout();
 
     webView = new QWebView();
+    webView->setPage(new Webpage);
     webView->settings()->setAttribute(QWebSettings::LocalContentCanAccessRemoteUrls,true); // needs QT >= 4.6
 
-   // QNetworkCookieJar jar;
+    // QNetworkCookieJar jar;
     //QList<QNetworkCookie> cookies;
     //cookies.append( QNetworkCookie("auth","XXX") );
     //jar.setCookiesFromUrl(cookies, QUrl(""))
@@ -64,16 +80,22 @@ void MainWindow::setupUi()
     //->page->networkAccessManager()->setCookieJar( new QNetworkCookieJar() );
     playurlBtn = new QPushButton("Play Stream");
     playfileBtn = new QPushButton("Play Local File");
+    reloadBtn = new QPushButton("Reload");
 
-    layout->addWidget(webView, 0, 0, 1, 2);
+    layout->addWidget(webView, 0, 0, 1, 3);
+    /*
     layout->addWidget(playurlBtn, 1, 0);
     layout->addWidget(playfileBtn, 1, 1);
-
+    layout->addWidget(reloadBtn, 1, 2);
+    */
+    //layout->setSpacing(0);
+    layout->setContentsMargins(QMargins(0,0,0,0));
     setLayout(layout);
     show();
 
     connect(playurlBtn, SIGNAL(clicked()), this, SLOT(on_streambutton_clicked()));
     connect(playfileBtn, SIGNAL(clicked()), this, SLOT(on_playbutton_clicked()));
+    connect(reloadBtn, SIGNAL(clicked()), this, SLOT(on_reloadbutton_clicked()));
 }
 
 void MainWindow::volumeChanged(qreal vr)
@@ -203,7 +225,7 @@ void MainWindow::metaStateChanged(Phonon::State newState, Phonon::State /* oldSt
      //QTime displayTime(0, (int)((time / 60000) % 60), (int)((time / 1000) % 60), 0);
      //QString prog = displayTime.toString("mm:ss");
      //setWindowTitle(prog);
-
+    qDebug() << time << " /// " << mediaObject->remainingTime();
      webkitApi->emitTick(time, mediaObject->remainingTime());
      //int secs = time / 1000;
      //jseval(QString("Musickit.tick(%1); null").arg(secs));
@@ -215,8 +237,9 @@ void MainWindow::metaStateChanged(Phonon::State newState, Phonon::State /* oldSt
 
  void MainWindow::log(QString str)
  {
-     QString js("mk_log(\"" + str.replace("\"","\\\"") + "\"); null");
-     jseval(js);
+     qDebug() << str;
+     //QString js("mk_log(\"" + str.replace("\"","\\\"") + "\"); null");
+     //jseval(js);
  }
 
  void MainWindow::jseval(QString str)
@@ -231,7 +254,7 @@ void MainWindow::metaStateChanged(Phonon::State newState, Phonon::State /* oldSt
 
 
 
-void MainWindow::changeEvent(QEvent *e)
+void MainWindow::changeEvent(QEvent * /* e */)
 {
     /*QMainWindow::changeEvent(e);
     switch (e->type()) {
@@ -261,4 +284,9 @@ void MainWindow::on_streambutton_clicked()
     {
         play(QUrl(url));
     }
+}
+
+void MainWindow::on_reloadbutton_clicked()
+{
+    webView->reload();
 }

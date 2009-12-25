@@ -7,10 +7,16 @@ QT += network \
     webkit \
     xml \
     phonon
+
 TARGET = musickit
 TEMPLATE = app
 SOURCES += main.cpp \
     mainwindow.cpp \
-    WebkitApi.cpp
+    WebkitApi.cpp 
 HEADERS += mainwindow.h \
-    WebkitApi.h
+    WebkitApi.h 
+
+
+
+# explicitly link to winsock (not sure why this is needed)
+#windows:LIBS += -lws2_32
