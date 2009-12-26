@@ -197,10 +197,22 @@ table {
   table tbody tr.selected {
     background-color: rgb(63,111,211);
   }
+  
+  table tbody tr.playable {
+    color: darkgreen;
+  }
+  
+  table tbody tr.unplayable {
+    color: rgb(200,0,0);
+  }
 
   table tbody tr.selected td, table tbody tr.selected td a {
     color: white;
   }
+
+  table.playlist .alt { width: 30px; }
+  table.playlist .status { width: 110px; }
+  table.playlist .duration { width: 50px; }
 
 /*  table tbody tr:nth-child(even):hover {
     background: rgba(255,255,150,0.2);
@@ -214,6 +226,8 @@ table {
   table tbody a:hover {
     text-decoration: underline;
   }
+
+
 
 .hidden {
   display: none;

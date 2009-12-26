@@ -1,65 +1,173 @@
 <html>
 <head>
+<link href="musickit.css" media="screen" rel="stylesheet" type="text/css" />
 <script src="playdar_compressed.js"></script>
-<body>
-<h1>test</h1>
-<a href="index.html">INDEX</a>
-<h3>Loading page</h3>
-<div id="trks">
+<script src="jquery-1.3.2.min.js"></script>
 <script type="text/javascript">
-var req = new XMLHttpRequest();
-req.open("GET", "http://ws.audioscrobbler.com/1.0/tag/metal/toptracks.xspf", false);
-req.send("");
-//alert("gottit");
-var doc = req.responseXML.documentElement;
-var tracks = doc.getElementsByTagName("trackList")[0].getElementsByTagName('track');
-//alert(tracks.length);
-var trklist=new Array();
-for(i=0; i<tracks.length; i++)
+$(document).ready(function(){
+    // i: seconds played so far, emitted every second
+    MK.elapsed.connect(function(elapsed, remaining){
+        $('#np_elapsed').innerHTML = Playdar.Util.mmss(elapsed);
+        $('#np_remaining').innerHTML = '-'+Playdar.Util.mmss(remaining);
+    });
+
+    // one of: playing stopped paused buffering loading
+    MK.stateChange.connect(function(state){
+        MK.setWindowTitle(state);
+        /*
+        switch(state)
+        {
+            case 'stopped':
+                $('#np_artist').innerHTML = '';
+                $('#np_track').innerHTML = '';
+                $('#np_elapsed').innerHTML = '00:00';
+                $('#np_remaining').innerHTML = '00:00';
+                break;
+        }
+        */
+    });
+
+    // if there's any buffering, pc: 0-100 % of stream loaded.
+    MK.bufferPercent.connect(function(pc){
+        MK.setWindowTitle("Buffering: " + pc +"%");
+    });
+
+    // 0-100, new volume setting
+    MK.volumeChanged.connect(function(v){
+        MK.setWindowTitle('volume set to '  + v);
+    });
+
+    Playdar.client.go();
+});
+</script>
+
+</head>
+<body>
+<!-- player controls, NP status etc -->
+<div id="topbar">
+    <table style="width:100%;">
+    <tr>
+    <td style="width:190px; margin-left:15px;">
+        <button id="playpausebtn" onclick="MK.togglePause();">pausetog</button>
+        <button id="stopbtn" onclick="MK.stop();">stop</button>
+        <select type="combo" id="vol" style="clear:left;" onchange="MK.setVolume(this.value);">
+            <option value="0">0</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="75">75</option>
+            <option selected="selected" value="100">100</option>
+        </select>
+    </td>
+    <td style="padding:5px;">
+        <div style="border:1px solid green; height:60px;;  width:100%; background-color:#CCCC99;
+                    text-align:center; overflow:hidden; font-size:12px; font-face:sans-serif;">
+            <span id="np_track">The track title goes here</span><br/>
+            <span id="np_artist">Artist Name Here</span>
+            <table style="width:100%; height:15px; margin:0; padding:0; font-face: fixed; font-size:14px;">
+            <tr>
+            <td style="text-align:right; width:60px;" id="np_elapsed">00:00</td>
+            <td style="padding-left: 10px; padding-right:10px;">
+                <div style="height:3px; width:100%; border:1px solid grey; clear:left;" id="scrubber">
+                </div>
+            </td>
+            <td style="text-align:left;  width:60px;" id="np_remaining">-00:00</td>
+            </table>
+        </div>
+    </td>
+    <td style="width: 200px; text-align:center; ">
+        SEARCH(todo)
+    </td>
+    </tr>
+    </table>
+</div>
+
+<div id="left-sidebar"> left-sidebar </div>
+<div id="content"> 
+<h3 id="h">Loading playlist</h3>
+
+<table id="tbl" style="width:100%; height:100%;">
+    <thead>
+    <tr style="font-weight:bold; text-align:left;">
+        <th>Artist</th> <th>Track</th> <th>Status</th>
+    </tr>
+    </thead>
+    <tbody style="" id="playlist">
+    </tbody>
+</table>
+
+<script type="text/javascript">
+
+function loadPlaylist()
 {
-    trk = tracks[i];
-    var title  = trk.getElementsByTagName('title')[0].firstChild.nodeValue;
-    var artist = trk.getElementsByTagName('creator')[0].firstChild.nodeValue;
-    trklist[i]={'artist': artist, 'track': title};
-    document.write("<div id=\"t"+i+"\">" + artist +  " - " + title + " </div><br/>");
+    var req = new XMLHttpRequest();
+    req.open("GET", "http://ws.audioscrobbler.com/1.0/tag/metal/toptracks.xspf", false);
+    //req.open("GET", "toptracks.xspf", false);
+    req.send("");
+    var doc = req.responseXML.documentElement;
+    var tracks = doc.getElementsByTagName("trackList")[0].getElementsByTagName('track');
+    $('#h').innerHTML = tracks.length + ' tracks loaded';
+    for(i=0; i<tracks.length; i++)
+    {
+        trk = tracks[i];
+        var title  = trk.getElementsByTagName('title')[0].firstChild.nodeValue;
+        var artist = trk.getElementsByTagName('creator')[0].firstChild.nodeValue;
+        var qid = Playdar.Util.generate_uuid();
+
+        var tr = document.createElement('tr');
+        tr.className = (i%2==0)?'even':'odd';
+        tr.id=qid;
+        var tdart = document.createElement('td');
+        tdart.appendChild(document.createTextNode(artist));
+        var tdtrk = document.createElement('td');
+        tdtrk.appendChild(document.createTextNode(title));
+        var tdstatus = document.createElement('td');
+        tdstatus.appendChild(document.createTextNode('resolving...'));
+        tdstatus.id=qid+'_status';
+        tr.appendChild(tdart);
+        tr.appendChild(tdtrk);
+        tr.appendChild(tdstatus);
+        document.getElementById('playlist').appendChild(tr);
+        Playdar.client.resolve(artist, title, "", qid);
+    }
 }
 </script>
-</div>
-<div id="res"></div>
+
 <script type="text/javascript">
 
     Playdar.USE_JSONP=false;
+    Playdar.USE_STATUS_BAR=false;
     Playdar.setupClient({
         
         // Called when the browser is authorised to query Playdar.
         onAuth: function () {
-            // At this point, we can query the Playdar API for a track and start polling for matches.
-            for(j=0;j<trklist.length;j++)
-            {
-                Playdar.client.resolve(trklist[j].artist, trklist[j].track, "", 't'+j);
-            }
+            loadPlaylist();
         },
         
         // Called in response to each poll with the results so far.
         onResults: function (response, lastPoll) {
 //            console.log('Polling ' + response.qid);
             if (lastPoll && response) {
-                var d = document.getElementById(response.qid);
+                var d = $('#'+response.qid);
                 if(response.results.length == 0)
                 {
-                    d.style.textDecoration='line-through';
+                    d.css({'textDecoration':'line-through'});
+                    $('#'+response.qid+'_status').innerHTML = "not found";
                 }else{
+                    $('#'+response.qid+'_status').innerHTML = response.results.length + 
+                                                              " results, " + +response.results[0].score;
                     var url="http://localhost:60210/sid/"+response.results[0].sid;
-                    d.innerHTML = '<a href="#" onclick="MK.play(\''+url+'\'); return false;">' + d.innerHTML + '</a>' + "<br/>" + url;
+                    d.onclick = function(){ 
+                        $('#np_artist').innerHTML = response.results[0].artist;
+                        $('#np_track').innerHTML = response.results[0].track;
+                        MK.play(url); 
+                    };
+//                    d.innerHTML = '<a href="#" onclick="MK.play(\''+url+'\'); return false;">' + d.innerHTML + '</a>' + "<br/>" + url;
                 }
-//document.getElementById("res").innerHTML=JSON.stringify(response);
-                // Take a look at the final response.
-                //console.dir(response);
             }
         }
         
     });
-    Playdar.client.go();
 </script>
-
+fin
+</div>
 </body></html>

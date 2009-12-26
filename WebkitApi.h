@@ -35,6 +35,7 @@ public slots:
     void play(QString);
     void stop();
     void setWindowTitle(QString);
+    void log(QString);
 
 private slots:
     void attachObject();

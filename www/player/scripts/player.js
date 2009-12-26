@@ -1,94 +1,16 @@
-/*
-function arraySum(a) {
-    var sum = 0
-    $.each(a,function(i) {
-      sum += a[i];
-    });
-    return sum;
-}
 
-
-Playlist = function(){}
-Playlist.prototype = {
-  tracks: [],
-  trackids: {},
-  currentid: false,
-  id: "playlist0001",
-  
-  init: function(){
-    var self=this;
-    $('#playlist')
-      .clone()
-      .attr('id',"list-" + this.id)
-      .appendTo("#lists")
-      .hide();
-    this.dom = $("#lists > div:last"); // a bit ugly
-    this.list = $("tbody", this.dom);
-    this.colWidths = new Array(20,250,130,50,100); // default col widths
-    // header colWidths
-    $("table.list-header th",this.dom).each(function(i) {
-      $(this).width(self.colWidths[i]);
-    });
-    
-
-  },
-  
-  addTrack: function(t){
-    var self = this;
-    if(!t.qid) t.sid=Playdar.Util.generate_uuid();
-    this.tracks[this.tracks.length] = t;
-    //this.trackqids[t.qid]=this.tracks.length-1;
-    $('#playlist-row table tr')
-      .clone()
-      //.css("width",SC.arraySum(self.colWidths)+7*7)
-      .dblclick(function() {
-        //self.player.currentPlaylist = self;
-        // find out at which position we are at in the playlist, and store that as the currentPos
-        //self.currentPos = $(this).parents("tbody").find("tr").index(this);
-        $(this).addClass("selected");
-         self.loadTrack(self.currentPos);
-      })
-      .find("td:nth-child(1)").css("width",self.colWidths[0]).end()
-      .find("td:nth-child(2)").css("width",self.colWidths[1]).text(t.track).end()
-      .find("td:nth-child(3)").css("width",self.colWidths[2]).text(t.artist).end()
-      .find("td:nth-child(4)").css("width",self.colWidths[3]).text(Playdar.Util.mmss(t.duration)).end()
-      .find("td:nth-child(5)").css("width",self.colWidths[4]).text("???").end()
-      .end()
-      .appendTo(this.list);
-
-    return t.qid;
-  },
-  resolveAll: function(){
-    for (var i=0;i<this.tracks.length;i++)
-    {
-      var trk = this.tracks[i];
-      Playdar.client.resolve(trk.artist, trk.track, trk.sid);
-      $('#'+trk.qid).addClass('resolving');
-    }
-  }
-};
-
-var fakelist = new Playlist;
-fakelist.addTrack({ 'track':'Some track title',
-		    'artist': 'Some artistname',
-		    'sid': '9437ED1F-FD2B-4A80-8891-58666AA1CAB3',
-		    'duration' : 200
-		  });
-fakelist.addTrack({ 'track':'Some Other track title',
-		    'artist': 'Some OTHER artistname',
-		    'sid': '9437ED1F-FD2B-4A80-8891-58666AA1CAB3',
-		    'duration' : 234
-		  });
-
-*/		  
 Player = function(){}
 Player.prototype = {
   isPlaying: false,
   currentTrack : {},
   
   go: function() {
+    Playdar.MAX_CONCURRENT_RESOLUTIONS = 15;
     Playdar.USE_JSONP=false;
     Playdar.USE_STATUS_BAR=false;
+    Playdar.USE_SCROBBLER = false;
+    Playdar.MAX_POLLS = 20;
+    
     Playdar.setupClient({
       onAuth: function () {
 	  p.initialize();
@@ -111,7 +33,7 @@ Player.prototype = {
     this.playButton.click(function() {
       self.togglePlay();
     });
-
+    
     sidebarWidth = 220;
         
     $("#sidebar").width(sidebarWidth);
@@ -136,9 +58,13 @@ Player.prototype = {
       }
     });
 
-    $('#next').click(function() {
-      alert('next');
-    });
+    $('#next')
+      .click(function() {
+	pl.playNext();
+      })
+      .dblclick(function() {
+	pl.playAlternateOrNext();
+      });
 
     $('#prev').click(function() {
       alert('prev');
@@ -158,17 +84,9 @@ Player.prototype = {
     });
     
     $('#loop').click(function(){
-      var track = { 'track':'Some track title',
-		    'artist': 'Some artistname',
-		    'sid': '9437ED1F-FD2B-4A80-8891-58666AA1CAB3',
-		    'duration' : 200
-		  };
-      self.play(track);
+      p.play({'artist':'Mokele', 'track':'Hiding in your insides', 'url':'http://www.playdar.org/hiding.mp3'}, 'http://www.playdar.org/hiding.mp3');
     });
     
-    $('#rand').click(function(){
-      self.switchPlaylist(fakeplaylist);
-    });
     this.playlists = {};
     
     // Wire up events from musickit container:
@@ -177,24 +95,42 @@ Player.prototype = {
     MK.stateChange.connect(function(state){
       this.laststate = state;
       MK.setWindowTitle(this.laststate);
+      MK.log('State: ' + state + ' isPlaying: ' + self.isPlaying);
       switch(this.laststate)
       {
 	case 'stopped':
 	  self.trackEnded();
+	  //pl.playNext();
 	  break;	  
 	case 'playing':
 	  self.trackStarted(self.currentTrack);
 	  break;
+	case 'error':
+	case 'fatalerror':
+	  if(self.isPlaying)
+	  {
+	    pl.playAlternateOrNext();
+	  }
       }
     });
     
     MK.elapsed.connect(function(elapsed, remaining){
-      $('#position').html(Playdar.Util.mmss(elapsed));
-      $('#duration').html(Playdar.Util.mmss(remaining));
-      //MK.setWindowTitle(elapsed + '/' + remaining);
-      var val = 100*elapsed/(elapsed+remaining);
-      $('#elapsed').css('width', val+'%');
-      //if($('#loaded').css('width') < (val+'%')) $('#loaded').css('width', val+'%');
+      MK.log('elapsed js ping, remaining: ' + remaining);
+      var elapsedStr = Playdar.Util.mmss(elapsed);
+      var durationStr;
+      var widpc;
+      if( remaining == -1 ) // unknown stream length
+      {
+	durationStr = Playdar.Util.mmss(self.currentTrack.duration) + ' ?';
+	widpc = 100*elapsed/(self.currentTrack.duration+0.00001);
+      } else {
+	durationStr = Playdar.Util.mmss(remaining+elapsed);
+	widpc = 100*elapsed/(elapsed+remaining+0.000001);
+      }
+      if(widpc>100) widpc=100;
+      $('#position').html(elapsedStr);
+      $('#duration').html(durationStr);
+      $('#elapsed').css('width', widpc+'%');
     });
     
     MK.bufferPercent.connect(function(pc){
@@ -210,16 +146,16 @@ Player.prototype = {
   },
   
   playdarResult: function(response, lastPoll){
-    
+    pl.addResults(response.qid, response.results, lastPoll);
   },
   
-  play: function(track) {
+  play: function(track, url) {
+    MK.log('play: ' + JSON.stringify(track));
     MK.stop();
     var sid = track.sid;  
     var self = this;
-    var url = "http://www.playdar.org/hiding.mp3";
-    //var url = "http://localhost:60210/sid/"+sid;
     self.currentTrack = track;
+    self.isPlaying = true;
     MK.play(url);
   },
   
@@ -229,6 +165,7 @@ Player.prototype = {
   
   stop: function() {
     MK.stop();  
+    self.isPlaying = false;
     self.trackEnded();
   },
   
@@ -243,7 +180,7 @@ Player.prototype = {
   },
   
   trackStarted: function(track) {
-    this.isPlaying = true;
+    self.isPlaying = true;
     $("body").addClass("playing");
     //this.loading.css('width',"100%");
     $('#np').hide().html(track.artist + " - " + track.track).fadeIn();
@@ -270,79 +207,201 @@ $(document).ready(function(){
   window.p = new Player();
   p.go();
   
-   $('#playlist')
-      .clone()
-      .attr('id',"pl")
-      .appendTo("#lists")
-      .show();
-      
-  this.dom = $("#lists > table:last"); // a bit ugly
-  //this.dom = $('pl');
-  this.list = $("tbody", this.dom);
-  
-  
-  function withinHeaderDragArea(el,e) {
-      var left = e.clientX-$(el).offset().left-($(el).width()+3);
-      if(left > 0 && left < 4) {
-        return true;
-      } else {
-        return false;
-      }
+  var req = new XMLHttpRequest();
+  req.open("GET", "http://ws.audioscrobbler.com/1.0/tag/metal/toptracks.xspf", false);
+  //req.open("GET", "toptracks.xspf", false);
+  req.send("");
+  var doc = req.responseXML;//.documentElement;
+  var jspf = XSPF.toJSPF(doc);
+  window.pl = new Playlist();
+  pl.init('0001', jspf.playlist.title);
+  for(var i=0;i<jspf.playlist.track.length;i++)
+  {
+    var track  = jspf.playlist.track[i].title;
+    var artist = jspf.playlist.track[i].creator;
+    var dur    = parseInt(jspf.playlist.track[i].duration)/1000;
+    pl.addTrack({ 'track':track,
+		  'artist': artist,
+		  'duration': dur});
   }
-  $("th",this.dom)
+  //alert(qid);
+});
+
+// Playlist class:
+Playlist = function(){};
+Playlist.prototype = {
+  
+  init: function(plid, name){
+    var self=this;
+    this.id = plid;
+    this.name = name;
+    this.playdarResults = {};
+    this.lastQid = false;
+    this.lastResultIndex = 0;
+    $('#lists table').hide();
+    $('#playlist-table')
+      .clone()
+      .attr('id',plid)
+      .appendTo("#lists");
+      
+    this.dom = $("#lists > table:last");
+    //this.dom = $('pl');
+    this.list = $("tbody", this.dom);
+  
+    function withinHeaderDragArea(el,e) {
+	var left = e.clientX-$(el).offset().left-($(el).width()+3);
+	if(left > 0 && left < 4) {
+	  return true;
+	} else {
+	  return false;
+	}
+    }
+    $("th",this.dom)
       .mousemove(function(e) {
-        if(withinHeaderDragArea(this,e)) {
-          $(this).css("cursor","col-resize");
-        } else {
-          $(this).css("cursor","default");
-        }
+	if(withinHeaderDragArea(this,e)) {
+	  $(this).css("cursor","col-resize");
+	} else {
+	  $(this).css("cursor","default");
+	}
       })
       .mousedown(function(e) {
-        var $col = $(this);
-        var oldColWidth = $col.width();
-        var colIdx = $(this).parents("thead").find("th").index(this) + 1;
-        var rowWidth = $(this).parents("tr").width();
-        var $row = $(this).parents("tr");
-        var $rows = $("tr",self.list);
+	var $col = $(this);
+	var oldColWidth = $col.width();
+	var colIdx = $(this).parents("thead").find("th").index(this) + 1;
+	var rowWidth = $(this).parents("tr").width();
+	var $row = $(this).parents("tr");
+	var $rows = $("tr",self.list);
 
-        if(withinHeaderDragArea(this,e)) {
-          $(document)
-            .mouseup(function() {
-              $(document).unbind("mousemove");
-            })
-            .mousemove(function(ev) {
-              var colWidth = ev.clientX - $col.offset().left;
-              $col.width(colWidth);
-              // resize all the cells in the same col
-              $("td:nth-child(" + colIdx + ")", self.list).width(colWidth);
-              $row.width(rowWidth+(colWidth-oldColWidth));
-              $rows.width(rowWidth+(colWidth-oldColWidth));
-            });
-          }
+	if(withinHeaderDragArea(this,e)) {
+	  $(document)
+	    .mouseup(function() {
+	      $(document).unbind("mousemove");
+	    })
+	    .mousemove(function(ev) {
+	      var colWidth = ev.clientX - $col.offset().left;
+	      if(colWidth >= 10)
+	      {
+		$col.width(colWidth);
+		// resize all the cells in the same col
+		$("td:nth-child(" + colIdx + ")", self.list).width(colWidth);
+		$row.width(rowWidth+(colWidth-oldColWidth));
+		$rows.width(rowWidth+(colWidth-oldColWidth));
+	      }
+	    });
+	  }
       })
       .mouseup(function(e) {
-        //var colIdx = $(this).parents("thead").find("th").index(this) + 1;
-        //$.cookie('playlist_col_width_' + (colIdx-1),$(this).width());
+	//var colIdx = $(this).parents("thead").find("th").index(this) + 1;
+	//$.cookie('playlist_col_width_' + (colIdx-1),$(this).width());
       });
-
+      
+      $('<li id="'+this.id+'"><span></span>' + this.name + '</li>')
+        .appendTo('#playlists');
+  },
   
+  play: function(qid){
+    var res = this.playdarResults[qid];
+    if(res.length<1)
+    {
+      alert('no results');
+    }else{
+      this.lastResultIndex = 0;
+      var url = res[this.lastResultIndex].url || Playdar.client.get_stream_url(res[this.lastResultIndex].sid);
+      $('#'+qid).addClass('playing');
+      this.lastQid=qid;
+      p.play(res[this.lastResultIndex], url);    
+    }
+  },
   
-  for(var i=0;i<100;i++)
-  {
+  playAlternateOrNext: function(){
+    var qid = this.lastQid;
+    var res = this.playdarResults[qid];
+    // any more sources left to try?
+    if(res.length > this.lastResultIndex+1)
+    {
+      //alert('trying alternate');
+      this.lastResultIndex++;
+      $('#'+qid+' td.alt').hide().text(res.length-(this.lastResultIndex)).fadeIn();
+      this.setStatusCell(qid, res, true, this.lastResultIndex);
+      var url = res[this.lastResultIndex].url || Playdar.client.get_stream_url(res[this.lastResultIndex].sid);
+      p.play(res[this.lastResultIndex], url);
+    }else{
+      alert('playing next, no more alts');
+      this.playNext();
+    }
+  },
+  
+  playNext: function(){
+    this.lastResultIndex = 0;
+    $('#'+this.lastQid).removeClass('playing');
+    var nextTrs = $('#'+this.lastQid+' ~ tr.playable');
+    if(nextTrs.length==0)
+    {
+      alert('fin');
+    }
+    else
+    {
+      var nextQ = nextTrs[0].id;
+      //alert('next qid = ' +  nextQ);
+      this.play(nextQ);
+    }
+    
+  },
+  
+  addTrack: function(trk){
+    if(!trk.qid) trk.qid=Playdar.Util.generate_uuid();
     $('#playlist-row')
       .clone()
-      //.css("width",SC.arraySum(self.colWidths)+7*7)
+      .attr('id', trk.qid)
       .dblclick(function() {
         //self.player.currentPlaylist = self;
         // find out at which position we are at in the playlist, and store that as the currentPos
         //self.currentPos = $(this).parents("tbody").find("tr").index(this);
-        $(this).addClass("selected");
+        //$(this).addClass("selected");
+	pl.play(trk.qid);
          //self.loadTrack(self.currentPos);
       })
+      .find("td.track").text(trk.track).end()
+      .find("td.artist").text(trk.artist).end()
+      .find("td.duration").text(Playdar.Util.mmss(trk.duration)).end()
+      .find("td.status").text("Searching").end()
+      .find("td.alt").text('').end()
       .appendTo(this.list);
+    Playdar.client.resolve(trk.artist, trk.track, trk.album || "", trk.qid);
+    return trk.qid;
+  },
+  
+  setStatusCell: function(qid, results, lastPoll, idx){
+    if(results.length < 1)
+    {
+      if(lastPoll) $('#'+qid+' td.status').html('Not found');
+      else $('#'+qid+' td.status').html( $('#'+qid+' td.status').html()+'.');
+    } 
+    else 
+    {
+      var pc = Math.round( (results[idx].score || 0) * 100 );
+      $('#'+qid+' td.status').html( pc + '%' + (results[idx].source?' - '+results[idx].source:'') );
+    }
+  },
+  
+  addResults: function(qid, results, lastPoll){
+    this.playdarResults[qid]=results;
+    this.setStatusCell(qid, results, lastPoll, 0);
+    $('#'+qid+' td.status').click(function(){
+      pl.play(qid);
+    });
+    if(results.length)
+    {
+      if(results[0].score >= 0.8)
+      {
+	$('#'+qid).addClass('playable').removeClass('unplayable');
+      }
+      $('#'+qid+' td.alt').html( results.length );
+    }else if(lastPoll && !$('#'+qid).hasClass('playable')) $('#'+qid).addClass('unplayable');
   }
-    
-});
+  
+};    
+
 
 
 

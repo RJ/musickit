@@ -13,7 +13,6 @@
 #include <QEvent>
 
 #include "WebkitApi.h"
-#include "jabber.h"
 
 class Webpage : public QWebPage
 {
@@ -51,8 +50,6 @@ private slots:
     void stop();
 
 private:
-
-    Jabber * jabber;
 
     WebkitApi * webkitApi;
     QWebView * webView;

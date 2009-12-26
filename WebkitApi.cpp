@@ -29,7 +29,7 @@ void WebkitApi::attachObject()
 void WebkitApi::emitTick(qint64 i64, qint64 i64rem)
 {
     int el  = i64 / 1000;
-    int rem = i64rem / 1000;
+    int rem = i64rem>0?(i64rem / 1000):i64rem;
     emit(elapsed(el, rem));
 }
 
@@ -77,4 +77,9 @@ void WebkitApi::play(QString s)
 void WebkitApi::stop()
 {
     emit(stopRequested());
+}
+
+void WebkitApi::log(QString s)
+{
+    qDebug() << s;
 }

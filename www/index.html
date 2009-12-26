@@ -44,7 +44,7 @@ setTimeout(function(){
         $('bufferpc').innerHTML = "Buffering: " + pc +"%";
     });
 
-    // 0-100, new volume setting
+    // 0-100, new volume setting (could have been changed via dbus  - update gui)
     MK.volumeChanged.connect(function(v){
         mk_log('volume set to '  + v);
     });
@@ -79,5 +79,6 @@ setTimeout(function(){
 <a href="test.html">test page</a>
 <a href="playdar.html">playdar test page</a>
 <a href="playdar2.html">playdar2 test page</a>
+<a href="player/index.html">/player/</a>
 </body>
 </html>

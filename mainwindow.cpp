@@ -158,6 +158,7 @@ void MainWindow::stop()
 
 void MainWindow::bufferPercent(int pc)
 {
+    qDebug() << "BufferPercent: " << pc;
     // perhaps some logic that decides if we should abort due to slowness?
     webkitApi->emitBufferPercent(pc);
 }
@@ -197,13 +198,14 @@ void MainWindow::stateChanged(Phonon::State newState, Phonon::State /* oldState 
 
 void MainWindow::sourceChanged(const Phonon::MediaSource & source)
 {
-    log("Source changed: " + source.url().toString());
+    qDebug() << "Source changed: " + source.url().toString();
 //    musicTable->selectRow(sources.indexOf(source));
 //    timeLcd->display("00:00");
 }
 
 void MainWindow::metaStateChanged(Phonon::State newState, Phonon::State /* oldState */)
  {
+    qDebug() << "Metastate changed to " << newState;
      if (newState == Phonon::ErrorState) {
          log("ERROR opening files: " + metaInformationResolver->errorString());
          //QMessageBox::warning(this, tr("Error opening files"),
