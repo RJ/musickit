@@ -214,6 +214,8 @@ table {
   table.playlist .status { width: 110px; }
   table.playlist .duration { width: 50px; }
 
+ table.playlist  .failed { background-color: lightred; }
+
 /*  table tbody tr:nth-child(even):hover {
     background: rgba(255,255,150,0.2);
   }
@@ -232,6 +234,7 @@ table {
 .hidden {
   display: none;
 }
+
 
   h4 {
     margin: 0;
@@ -555,6 +558,9 @@ table {
 
   #elapsed {
     background-color: green; width:0; height:3px;
+  }
+  #buffered {
+    background-color: red; width:75%; height:3px;
   }
 
   #position {

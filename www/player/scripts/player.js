@@ -134,7 +134,7 @@ Player.prototype = {
     });
     
     MK.bufferPercent.connect(function(pc){
-       // $('#loaded').css('width', pc +'%');
+       //$('#buffered').css('width', pc +'%');
     });
     
     MK.volumeChanged.connect(function(v){
@@ -326,7 +326,8 @@ Playlist.prototype = {
       var url = res[this.lastResultIndex].url || Playdar.client.get_stream_url(res[this.lastResultIndex].sid);
       p.play(res[this.lastResultIndex], url);
     }else{
-      alert('playing next, no more alts');
+      $('#'+qid).addClass('failed');
+      //alert('playing next, no more alts');
       this.playNext();
     }
   },
