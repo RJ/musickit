@@ -11,6 +11,7 @@
 #include <QPushButton>
 #include <QWebView>
 #include <QEvent>
+#include <QMenuBar>
 
 #include "WebkitApi.h"
 
@@ -22,12 +23,15 @@ class Webpage : public QWebPage
     }
 };
 
-class MainWindow : QWidget {
+class MainWindow : QMainWindow {
     Q_OBJECT
 public:
-    MainWindow(QWidget *parent = 0);
+    MainWindow();
     ~MainWindow();
     friend class WebkitApi;
+    QSize sizeHint() const {
+        return QSize(800, 480);
+    }
 
 protected:
     void changeEvent(QEvent *e);
@@ -56,6 +60,8 @@ private:
     QPushButton *playurlBtn;
     QPushButton *playfileBtn;
     QPushButton *reloadBtn;
+    QMenu * fileMenu;
+
 
     void setupUi();
     void play(QUrl);
