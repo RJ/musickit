@@ -1,3 +1,7 @@
+//if ("WebSocket" in window) alert('yes'); else alert('no');
+
+function myalert(json) { alert( JSON.stringify(json) ); }
+
 
 Player = function(){}
 Player.prototype = {
@@ -10,6 +14,7 @@ Player.prototype = {
     Playdar.USE_STATUS_BAR=false;
     Playdar.USE_SCROBBLER = false;
     Playdar.MAX_POLLS = 20;
+    Playdar.USE_COMET = true;
     
     Playdar.setupClient({
       onAuth: function () {
@@ -85,6 +90,11 @@ Player.prototype = {
     
     $('#loop').click(function(){
       p.play({'artist':'Mokele', 'track':'Hiding in your insides', 'url':'http://www.playdar.org/hiding.mp3'}, 'http://www.playdar.org/hiding.mp3');
+    });
+    
+    // toggle unplayable visibility
+    $('#rand').click(function(){
+      $('tr.unplayable').toggleClass('hidden');
     });
     
     this.playlists = {};
@@ -208,8 +218,9 @@ $(document).ready(function(){
   p.go();
   
   var req = new XMLHttpRequest();
-  req.open("GET", "http://ws.audioscrobbler.com/1.0/tag/metal/toptracks.xspf", false);
-  //req.open("GET", "toptracks.xspf", false);
+//  req.open("GET", "http://ws.audioscrobbler.com/1.0/tag/metal/toptracks.xspf", false);
+  //req.open("GET", "http://localhost:60210/static/toptracks.xspf", false);
+  req.open("GET", "file:///home/rj/src/playdar-core/priv/www/static/toptracks.xspf", false);
   req.send("");
   var doc = req.responseXML;//.documentElement;
   var jspf = XSPF.toJSPF(doc);
@@ -363,7 +374,7 @@ Playlist.prototype = {
       })
       .find("td.track").text(trk.track).end()
       .find("td.artist").text(trk.artist).end()
-      .find("td.duration").text(Playdar.Util.mmss(trk.duration)).end()
+      .find("td.duration").text(Playdar.Util.mmss(parseInt(trk.duration))).end()
       .find("td.status").text("Searching").end()
       .find("td.alt").text('').end()
       .appendTo(this.list);

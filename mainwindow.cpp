@@ -8,11 +8,15 @@
 #include <QGridLayout>
 #include <QPushButton>
 #include <QInputDialog>
-#include <QNetworkCookieJar>
-#include <QNetworkCookie>
+#include <QWebSecurityOrigin>
+#include <QMenu>
+#include <QMenuItem>
+
+//#include <QNetworkCookieJar>
+//#include <QNetworkCookie>
 
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow()
 {
     /*QXmppLogger::getLogger()->setLoggingType(QXmppLogger::FILE);
 
@@ -28,7 +32,7 @@ MainWindow::MainWindow(QWidget *parent)
     jabber->connectToServer(server, jid, pass);
 */
 
-    setParent(parent);
+
     source = 0;
     audioOutput = new Phonon::AudioOutput(Phonon::MusicCategory, this);
     mediaObject = new Phonon::MediaObject(this);
@@ -56,8 +60,20 @@ MainWindow::MainWindow(QWidget *parent)
     connect(webkitApi, SIGNAL(stopRequested()), this, SLOT(stop()));
     connect(audioOutput, SIGNAL(volumeChanged(qreal)), this, SLOT(volumeChanged(qreal)));
 
-    QString url("./www/player/index.html");
+    //QString url("http://localhost:8000/");
+    QString url("file:///home/rj/src/musickit/www/player/index.html");
+    //QString url("http://ideamonk.madetokill.com/bakabot/");
+/*
+
+    webView->page()->currentFrame()->securityOrigin().addLocalScheme("http");
+    webView->page()->currentFrame()->securityOrigin().addLocalScheme("ws");
+    webView->page()->currentFrame()->securityOrigin().addLocalScheme("http:");
+    webView->page()->currentFrame()->securityOrigin().addLocalScheme("ws:");
+*/
     webView->load(QUrl(url));
+
+    qDebug() << "SEC:" << webView->page()->currentFrame()->securityOrigin().host() << ":" <<
+            webView->page()->currentFrame()->securityOrigin().port();
 }
 
 MainWindow::~MainWindow()
@@ -66,11 +82,22 @@ MainWindow::~MainWindow()
 
 void MainWindow::setupUi()
 {
+    fileMenu = menuBar()->addMenu("&File");
+    QAction * exAct = new QAction("E&xit", this);
+    connect(exAct, SIGNAL(triggered()), this, SLOT(close()));
+
+    fileMenu->addAction(exAct);
+
+
+
     QGridLayout *layout = new QGridLayout();
 
     webView = new QWebView();
+
     webView->setPage(new Webpage);
     webView->settings()->setAttribute(QWebSettings::LocalContentCanAccessRemoteUrls,true); // needs QT >= 4.6
+    webView->settings()->globalSettings()->setAttribute(QWebSettings::LocalContentCanAccessRemoteUrls, true);
+    webView->settings()->globalSettings()->setAttribute(QWebSettings::DeveloperExtrasEnabled, true);
 
     // QNetworkCookieJar jar;
     //QList<QNetworkCookie> cookies;
@@ -90,7 +117,13 @@ void MainWindow::setupUi()
     */
     //layout->setSpacing(0);
     layout->setContentsMargins(QMargins(0,0,0,0));
-    setLayout(layout);
+
+    QWidget *widget = new QWidget;
+    widget->setLayout(layout);
+    setCentralWidget(widget);
+
+
+    //setLayout(layout);
     show();
 
     connect(playurlBtn, SIGNAL(clicked()), this, SLOT(on_streambutton_clicked()));
