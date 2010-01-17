@@ -218,9 +218,9 @@ $(document).ready(function(){
   p.go();
   
   var req = new XMLHttpRequest();
-//  req.open("GET", "http://ws.audioscrobbler.com/1.0/tag/metal/toptracks.xspf", false);
-  //req.open("GET", "http://localhost:60210/static/toptracks.xspf", false);
-  req.open("GET", "file:///home/rj/src/playdar-core/priv/www/static/toptracks.xspf", false);
+  //req.open("GET", "http://ws.audioscrobbler.com/1.0/tag/metal/toptracks.xspf", false);
+  req.open("GET", "http://localhost:60210/static/toptracks.xspf", false);
+  //req.open("GET", "file:///home/rj/src/playdar-core/priv/www/static/toptracks.xspf", false);
   req.send("");
   var doc = req.responseXML;//.documentElement;
   var jspf = XSPF.toJSPF(doc);

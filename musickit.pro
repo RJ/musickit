@@ -1,24 +1,34 @@
 # -------------------------------------------------
 # Project created by QtCreator 2009-12-22T13:28:55
 # -------------------------------------------------
-QT += webkit phonon
-
+QT += webkit network phonon gui xml
 TARGET = musickit
 TEMPLATE = app
-SOURCES += main.cpp \
-    mainwindow.cpp \
-    WebkitApi.cpp 
-HEADERS += mainwindow.h \
-    WebkitApi.h 
+
+SOURCES  += main.cpp \
+            mainwindow.cpp \
+            WebkitApi.cpp \
+            qplaydarclient/src/query.cpp \
+            qplaydarclient/src/result.cpp \
+            qplaydarclient/src/client.cpp \
+            player/playengine.cpp
+
+HEADERS  += mainwindow.h \
+            WebkitApi.h \
+            qplaydarclient/include/qplaydar.h \
+            qplaydarclient/include/qplaydar/client.h \
+            qplaydarclient/include/qplaydar/query.h \
+            qplaydarclient/include/qplaydar/result.h \
+            player/playengine.h
 
 
 
-#QMAKE_LFLAGS += -static # to try and build everything (not just qt) statically
+LIBS += -L/usr/local/lib -lqjson
 
+INCLUDEPATH += qplaydarclient/include
 
 #CONFIG += static warn_off # for static qt
 
-#LIBS += -lgloox
+#windows:LIBS += -lws2_32 # explicitly link to winsock (not sure why this is needed)
 
-# explicitly link to winsock (not sure why this is needed)
-#windows:LIBS += -lws2_32
+

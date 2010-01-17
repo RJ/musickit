@@ -188,7 +188,7 @@ Playdar.Client.prototype = {
         } else {
           if(Playdar.USE_COMET)
           {
-            this.comet_id = Playdar.Util.generate_uuid();
+            this.comet_id = 'xxxx';//Playdar.Util.generate_uuid();
             var req = {
                 method: 'comet',
                 id:     this.comet_id,

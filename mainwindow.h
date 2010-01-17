@@ -12,9 +12,14 @@
 #include <QWebView>
 #include <QEvent>
 #include <QMenuBar>
+#include <QNetworkAccessManager>
+
+#include "qplaydar.h"
+#include "player/playengine.h"
 
 #include "WebkitApi.h"
 
+// Subclass this just so we can print js errors:
 class Webpage : public QWebPage
 {
     virtual void javaScriptConsoleMessage ( const QString & message, int lineNumber, const QString & sourceID )
@@ -23,56 +28,37 @@ class Webpage : public QWebPage
     }
 };
 
+
 class MainWindow : QMainWindow {
     Q_OBJECT
+
 public:
     MainWindow();
     ~MainWindow();
-    friend class WebkitApi;
+    //friend class WebkitApi;
     QSize sizeHint() const {
         return QSize(800, 480);
     }
 
 protected:
-    void changeEvent(QEvent *e);
+
 
 private slots:
-    void on_playbutton_clicked();
-    void on_streambutton_clicked();
-    void on_reloadbutton_clicked();
-    void stateChanged(Phonon::State newState, Phonon::State oldState);
-    void tick(qint64 time);
-    void sourceChanged(const Phonon::MediaSource &source);
-    void metaStateChanged(Phonon::State newState, Phonon::State oldState);
-    void aboutToFinish();
-    void bufferPercent(int);
-    void volumeChanged(qreal);
 
-    void togglePause();
-    void setVolume(int);
-    void play(QString);
-    void stop();
 
 private:
 
     WebkitApi * webkitApi;
     QWebView * webView;
-    QPushButton *playurlBtn;
-    QPushButton *playfileBtn;
-    QPushButton *reloadBtn;
+    Playdar::Client * pc;
+    Playengine * player;
     QMenu * fileMenu;
-
+    QNetworkAccessManager * nam;
 
     void setupUi();
-    void play(QUrl);
 
-    Phonon::MediaObject *mediaObject;
-    Phonon::MediaObject *metaInformationResolver;
-    Phonon::AudioOutput *audioOutput;
-    Phonon::MediaSource *source;
 
-    void log(QString);
-    void jseval(QString);
+    //void jseval(QString);
 
 };
 
